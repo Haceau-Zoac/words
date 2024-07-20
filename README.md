@@ -4,6 +4,8 @@
 
 通过 `words`，你可以将任意 txt/pdf 文件或网站页面中的英文单词提取出来。
 
+词典来源：[ECDICT](https://github.com/skywind3000/ECDICT)
+
 ## 获取单词
 
 `words` 可以胜任这一工作。
