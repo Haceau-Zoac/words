@@ -19,3 +19,9 @@
 将 `ecdict.csv`、`query.py`、`stardict.py`、`gen.bat` 与 `words` 放在同一目录下，调用 `gen.bat`，生成 `output.txt`即为单词表。
 
 `get.bat` 的参数同 `words`。
+
+## 导入“不背单词”
+
+ - 先使用 `words login 手机号` 登录。
+ - 然后使用同 [获取单词](#获取单词)，但需要添加参数 `-d词典名 词典描述`。
+    - 默认分类为“其他”。
