@@ -9,20 +9,36 @@ public class Arguments
     public Arguments(string[] args)
     {
         Filters = new();
+
+        if (args[0] == "login")
+        {
+            Login = true;
+            return;
+        }
+
         if (args.Length >= 3)
         {
-            for (int i = 3; i <= args.Length; i++)
+            for (int i = 2; i < args.Length; i++)
             {
                 if (args[i][0] != '-') continue;
-                if (args[i][1] == 'f') Filters = File.ReadAllLines(args[i]).TakeLast(args[i].Length - 2).ToList();
+                if (args[i][1] == 'f') Filters = File.ReadAllLines(args[i][1..]).ToList();
                 if (args[i][1] == 's') Sort = true;
+                if (args[i][1] == 'd')
+                {
+                    DictionaryName = args[i][2..];
+                    DictionaryDescription = args[i + 1];
+                }
             }
         }
     }
 
     public bool Sort { get; set; }
+    public string? DictionaryName { get; set; }
+    public string? DictionaryDescription { get; set; }
+    public bool Login { get; set; }
 
     public List<string> Filters { get; set; }
+
 }
 
 public class Word
@@ -39,15 +55,21 @@ public class Word
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         if (args.Length < 2)
         {
-            Console.WriteLine("No file input.");
+            Console.WriteLine("Input?");
             return;
         }
 
         Arguments arguments = new(args);
+        if (arguments.Login)
+        {
+            Lang = new LangEasyLexis();
+            await Lang.Login(args[1]);
+            return;
+        }
 
         try
         {
@@ -55,7 +77,17 @@ public class Program
             Process(ref content);
             content = Lemmatization(content, arguments.Filters);
             if (arguments.Sort) content.Sort();
-            File.WriteAllText(".\\processed.txt", string.Join("\n", content));
+
+            string result = string.Join("\n", content);
+            if (arguments.DictionaryName != null)
+            {
+                Lang = new LangEasyLexis(true);
+                await Lang.PostDictionary(result, args[0], arguments.DictionaryName, arguments.DictionaryDescription);
+            }
+            else
+            {
+                File.WriteAllText(".\\processed.txt", result);
+            }
         }
         catch (Exception e)
         {
@@ -66,23 +98,20 @@ public class Program
 
     private static List<string> GetContents(string type, string input)
     {
-        switch (type)
+        return type switch
         {
-        case "txt":
-            return File.ReadAllText(input).Split(' ').Distinct().ToList();
-        case "url":
-            return ReadFromUrl(input);
-        case "pdf":
-            return ConvertPdfToTxt(input).Split(' ').Distinct().ToList();
-        }
-        throw new Exception("Unknown filetype.");
+            "txt" => File.ReadAllText(input).Split(' ').Distinct().ToList(),
+            "url" => ReadFromUrl(input),
+            "pdf" => ConvertPdfToTxt(input).Split(' ').Distinct().ToList(),
+            _ => throw new Exception("Unknown filetype."),
+        };
     }
 
     private static string ConvertPdfToTxt(string input)
     {
         string result = string.Empty;
-        using (PdfReader pdfReader = new(input))
-        using (PdfDocument pdfDocument = new(pdfReader))
+        using PdfReader pdfReader = new(input);
+        using PdfDocument pdfDocument = new(pdfReader);
         for (int page = 1; page <= pdfDocument.GetNumberOfPages(); page++)
         {
             string pageText = PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(page));
@@ -151,4 +180,5 @@ public class Program
         }
         return output.ToList();
     }
+    private static LangEasyLexis? Lang { get; set; }
 }
