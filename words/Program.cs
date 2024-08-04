@@ -3,6 +3,7 @@ using Catalyst.Models;
 using HtmlAgilityPack;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
+using PuppeteerSharp;
 using System.Text;
 
 public class Arguments
@@ -74,7 +75,7 @@ public class Program
 
         try
         {
-            List<string> content = GetContents(args[0], args[1]);
+            List<string> content = await GetContents(args[0], args[1]);
             Process(ref content);
             content = Lemmatization(content, arguments.Filters);
             if (arguments.Sort) content.Sort();
@@ -97,12 +98,12 @@ public class Program
         }
     }
 
-    private static List<string> GetContents(string type, string input)
+    private static async Task<List<string>> GetContents(string type, string input)
     {
         return type switch
         {
             "txt" => File.ReadAllText(input).Split(' ').Distinct().ToList(),
-            "url" => ReadFromUrl(input),
+            "url" => await ReadFromUrl(input),
             "pdf" => ConvertPdfToTxt(input).Split(' ').Distinct().ToList(),
             _ => throw new Exception("Unknown filetype."),
         };
@@ -121,11 +122,22 @@ public class Program
         return result;
     }
 
-    public static List<string> ReadFromUrl(string url)
+    public static async Task<List<string>> ReadFromUrl(string url)
     {
-        var web = new HtmlWeb();
-        web.OverrideEncoding = Encoding.UTF8;
-        var document = web.Load(url);
+        var browser = Puppeteer.LaunchAsync(new LaunchOptions
+        {
+            Headless = true,
+            ExecutablePath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+        }).Result;
+
+        IPage page = await browser.NewPageAsync();
+
+        await page.GoToAsync(url);
+        Thread.Sleep(1000);
+        string content = await page.GetContentAsync();
+
+        var document = new HtmlAgilityPack.HtmlDocument();
+        document.LoadHtml(content);
         return ReadChildNodes(document.DocumentNode);
     }
 
@@ -134,11 +146,15 @@ public class Program
         List<string> list = new();
         foreach (var node in doc.ChildNodes)
         {
-            if (node.ChildNodes.Count > 0)
+            if (node.Name != "script" && node.Name != "style")
             {
-                list.AddRange(ReadChildNodes(node));
+                if (node.ChildNodes.Count > 0)
+                {
+                    list.AddRange(ReadChildNodes(node));
+                }
+
+                list.Add(node.GetDirectInnerText());
             }
-            list.Add(node.GetDirectInnerText());
         }
         return list.ToList();
     }
