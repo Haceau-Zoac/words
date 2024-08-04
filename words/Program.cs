@@ -3,6 +3,7 @@ using Catalyst.Models;
 using HtmlAgilityPack;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
+using System.Text;
 
 public class Arguments
 {
@@ -123,15 +124,24 @@ public class Program
     public static List<string> ReadFromUrl(string url)
     {
         var web = new HtmlWeb();
+        web.OverrideEncoding = Encoding.UTF8;
         var document = web.Load(url);
-        HashSet<string> list = new();
-        foreach (var node in document.DocumentNode.ChildNodes)
+        return ReadChildNodes(document.DocumentNode);
+    }
+
+    public static List<string> ReadChildNodes(HtmlNode doc)
+    {
+        List<string> list = new();
+        foreach (var node in doc.ChildNodes)
         {
+            if (node.ChildNodes.Count > 0)
+            {
+                list.AddRange(ReadChildNodes(node));
+            }
             list.Add(node.GetDirectInnerText());
         }
         return list.ToList();
     }
-
     public static void Process(ref List<string> content)
     {
         List<string> processed = new List<string>();

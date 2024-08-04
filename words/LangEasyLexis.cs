@@ -145,7 +145,7 @@ public class LangEasyLexis
     {
         CookieCollection cookies = _handler.CookieContainer.GetAllCookies();
         string cookieString = string.Empty;
-        foreach (Cookie cookie in cookies)
+        foreach (Cookie cookie in cookies.Cast<Cookie>())
         {
             cookieString += $"{cookie.Name}={cookie.Value}\n";
         }

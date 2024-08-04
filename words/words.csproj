@@ -8,6 +8,8 @@
     <UseWindowsForms>True</UseWindowsForms>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'" />
+
   <ItemGroup>
     <PackageReference Include="Catalyst.Models.English" Version="1.0.30952" />
     <PackageReference Include="CsvHelper" Version="30.0.1" />
