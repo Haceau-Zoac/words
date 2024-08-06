@@ -6,7 +6,7 @@ output = ""
 
 with open('processed.txt') as file:
     contents = file.read()
-    list = contents.split(' ')
+    list = contents.split('\n')
     csv = stardict.DictCsv("ecdict.csv")
 
     for word in list:

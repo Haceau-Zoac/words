@@ -61,6 +61,7 @@ public class LangEasyLexis
         string token = GetToken(content);
 
         Image image = await GetCaptchaImage(token);
+        string? captchaCode = null;
         Thread captcha = new(new ThreadStart(() =>
         {
             Application.Run(new CaptchaForm(image));
@@ -69,9 +70,9 @@ public class LangEasyLexis
         captcha.Start();
 
         Console.Write("图像验证码：");
-        string? captchaCode = Console.ReadLine();
+        captchaCode = Console.ReadLine();
 
-        await SendMessage(token, phone, captchaCode);
+        await SendMessage(token, phone, captchaCode, page);
         Console.Write("短信验证码：");
         string? messageCaptchaCode = Console.ReadLine();
 
@@ -135,10 +136,15 @@ public class LangEasyLexis
         return Image.FromStream(memoryStream);
     }
 
-    private async Task SendMessage(string token, string phone, string? captcha)
+    private async Task SendMessage(string token, string phone, string? captcha, IPage page)
     {
-        var result = await _client.GetAsync($"https://bbdc.cn/phone/code?phone={phone}&captchaToken={token}&verifyCode={captcha}");
-        result.EnsureSuccessStatusCode();
+        var result = await page.GoToAsync($"https://bbdc.cn/phone/code?phone={phone}&captchaToken={token}&verifyCode={captcha}");
+        var json = await result.JsonAsync();
+        var error_body = json["error_body"];
+        if ((error_body != null) && (error_body["user_message"] != null))
+        {
+            throw new Exception(error_body["user_message"].ToString());
+        } 
     }
 
     private void SaveCookies()

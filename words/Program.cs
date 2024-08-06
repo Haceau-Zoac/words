@@ -66,15 +66,16 @@ public class Program
         }
 
         Arguments arguments = new(args);
-        if (arguments.Login)
-        {
-            Lang = new LangEasyLexis();
-            await Lang.Login(args[1]);
-            return;
-        }
 
         try
         {
+            if (arguments.Login)
+            {
+                Lang = new LangEasyLexis();
+                await Lang.Login(args[1]);
+                return;
+            }
+
             List<string> content = await GetContents(args[0], args[1]);
             Process(ref content);
             content = Lemmatization(content, arguments.Filters);
@@ -94,8 +95,8 @@ public class Program
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
-            return;
         }
+        Environment.Exit(0);
     }
 
     private static async Task<List<string>> GetContents(string type, string input)
